@@ -21,15 +21,15 @@ class VM:
     """Internal VM representation"""
 
     def __init__(
-            self,
-            id: UUID,
-            name: str,
-            flavor: str,
-            image: str,
-            status: VMStatus,
-            ip_address: str,
-            created_at: datetime,
-            updated_at: datetime
+        self,
+        id: UUID,
+        name: str,
+        flavor: str,
+        image: str,
+        status: VMStatus,
+        ip_address: str,
+        created_at: datetime,
+        updated_at: datetime,
     ):
         self.id = id
         self.name = name
@@ -50,7 +50,7 @@ class VM:
             "status": self.status,
             "ip_address": self.ip_address,
             "created_at": self.created_at,
-            "updated_at": self.updated_at
+            "updated_at": self.updated_at,
         }
 
 
@@ -94,13 +94,15 @@ class VMRepository:
             status=VMStatus.STOPPED,  # New VMs start in STOPPED state
             ip_address=self._generate_ip_address(),
             created_at=now,
-            updated_at=now
+            updated_at=now,
         )
 
         self._storage[vm_id] = vm
         self._name_index[request.name] = vm_id
 
-        logger.info(f"Created VM: id={vm_id}, name={request.name}, flavor={request.flavor}")
+        logger.info(
+            f"Created VM: id={vm_id}, name={request.name}, flavor={request.flavor}"
+        )
         return vm
 
     def get_by_id(self, vm_id: UUID) -> Optional[VM]:
@@ -143,10 +145,7 @@ class VMRepository:
         Returns:
             List of VM instances
         """
-        vms = [
-            vm for vm in self._storage.values()
-            if vm.status != VMStatus.DELETED
-        ]
+        vms = [vm for vm in self._storage.values() if vm.status != VMStatus.DELETED]
 
         if status_filter:
             vms = [vm for vm in vms if vm.status.value == status_filter.upper()]
@@ -202,4 +201,6 @@ class VMRepository:
         Returns:
             Number of active VMs
         """
-        return len([vm for vm in self._storage.values() if vm.status != VMStatus.DELETED])
+        return len(
+            [vm for vm in self._storage.values() if vm.status != VMStatus.DELETED]
+        )
