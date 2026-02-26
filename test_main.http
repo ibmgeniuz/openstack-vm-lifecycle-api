@@ -1,0 +1,454 @@
+# OpenStack VM Lifecycle Management API - HTTP Tests
+# Test all API endpoints locally
+# Base URL: http://localhost:8000
+
+### Variables
+@baseUrl = http://localhost:8000
+@apiUrl = {{baseUrl}}/api/v1
+# Replace this with an actual VM ID after creating a VM
+@vmId = REPLACE_WITH_ACTUAL_VM_ID
+
+###############################################################################
+# ROOT & HEALTH ENDPOINTS
+###############################################################################
+
+### 1. Root Endpoint
+GET {{baseUrl}}/
+Accept: application/json
+
+###
+
+### 2. Health Check
+GET {{apiUrl}}/health
+Accept: application/json
+
+###############################################################################
+# VM CRUD OPERATIONS
+###############################################################################
+
+### 3. Create VM - Small Instance
+POST {{apiUrl}}/vms
+Content-Type: application/json
+
+{
+  "name": "web-server-01",
+  "flavor": "m1.small",
+  "image": "ubuntu-22.04",
+  "network": "default"
+}
+
+###
+
+### 4. Create VM - Medium Instance
+POST {{apiUrl}}/vms
+Content-Type: application/json
+
+{
+  "name": "app-server-01",
+  "flavor": "m1.medium",
+  "image": "centos-8"
+}
+
+###
+
+### 5. Create VM - Large Instance
+POST {{apiUrl}}/vms
+Content-Type: application/json
+
+{
+  "name": "db-server-01",
+  "flavor": "m1.large",
+  "image": "ubuntu-22.04",
+  "network": "private"
+}
+
+###
+
+### 6. Create VM - Invalid (should fail with 422)
+POST {{apiUrl}}/vms
+Content-Type: application/json
+
+{
+  "name": "ab",
+  "flavor": "invalid-flavor",
+  "image": "ubuntu-22.04"
+}
+
+###
+
+### 7. List All VMs (default pagination)
+GET {{apiUrl}}/vms
+Accept: application/json
+
+###
+
+### 8. List VMs - Page 1 with 5 items
+GET {{apiUrl}}/vms?page=1&page_size=5
+Accept: application/json
+
+###
+
+### 9. List VMs - Filter by RUNNING status
+GET {{apiUrl}}/vms?status=RUNNING
+Accept: application/json
+
+###
+
+### 10. List VMs - Filter by STOPPED status
+GET {{apiUrl}}/vms?status=STOPPED
+Accept: application/json
+
+###
+
+### 11. Get VM Details (use actual VM ID)
+GET {{apiUrl}}/vms/{{vmId}}
+Accept: application/json
+
+###
+
+### 12. Get VM Details - Not Found (should return 404)
+GET {{apiUrl}}/vms/00000000-0000-0000-0000-000000000000
+Accept: application/json
+
+###
+
+### 13. Delete VM (use actual VM ID)
+DELETE {{apiUrl}}/vms/{{vmId}}
+Accept: application/json
+
+###
+
+### 14. Delete VM - Not Found (should return 404)
+DELETE {{apiUrl}}/vms/00000000-0000-0000-0000-000000000000
+Accept: application/json
+
+###############################################################################
+# VM LIFECYCLE OPERATIONS
+###############################################################################
+
+### 15. Start VM (use actual VM ID)
+POST {{apiUrl}}/vms/{{vmId}}/start
+Accept: application/json
+
+###
+
+### 16. Get VM Status
+GET {{apiUrl}}/vms/{{vmId}}/status
+Accept: application/json
+
+###
+
+### 17. Pause VM (must be RUNNING first)
+POST {{apiUrl}}/vms/{{vmId}}/pause
+Accept: application/json
+
+###
+
+### 18. Resume VM (must be PAUSED first)
+POST {{apiUrl}}/vms/{{vmId}}/resume
+Accept: application/json
+
+###
+
+### 19. Restart VM (must be RUNNING)
+POST {{apiUrl}}/vms/{{vmId}}/restart
+Accept: application/json
+
+###
+
+### 20. Stop VM (can be RUNNING or PAUSED)
+POST {{apiUrl}}/vms/{{vmId}}/stop
+Accept: application/json
+
+###############################################################################
+# ERROR SCENARIOS (for testing validation)
+###############################################################################
+
+### 21. Start Already Running VM (should return 409)
+# First start the VM, then try starting again
+POST {{apiUrl}}/vms/{{vmId}}/start
+Accept: application/json
+
+###
+
+### 22. Stop Already Stopped VM (should return 409)
+# First stop the VM, then try stopping again
+POST {{apiUrl}}/vms/{{vmId}}/stop
+Accept: application/json
+
+###
+
+### 23. Pause Stopped VM (should return 409)
+# VM must be RUNNING to pause
+POST {{apiUrl}}/vms/{{vmId}}/pause
+Accept: application/json
+
+###
+
+### 24. Resume Running VM (should return 409)
+# VM must be PAUSED to resume
+POST {{apiUrl}}/vms/{{vmId}}/resume
+Accept: application/json
+
+###
+
+### 25. Restart Stopped VM (should return 409)
+# VM must be RUNNING to restart
+POST {{apiUrl}}/vms/{{vmId}}/restart
+Accept: application/json
+
+###############################################################################
+# COMPLETE WORKFLOW TEST
+###############################################################################
+
+### WORKFLOW 1: Create a test VM
+POST {{apiUrl}}/vms
+Content-Type: application/json
+
+{
+  "name": "test-workflow-vm",
+  "flavor": "m1.small",
+  "image": "ubuntu-22.04"
+}
+# Copy the "id" from response and replace {{vmId}} above
+
+###
+
+### WORKFLOW 2: Check initial status (should be STOPPED)
+GET {{apiUrl}}/vms/{{vmId}}/status
+Accept: application/json
+
+###
+
+### WORKFLOW 3: Start the VM
+POST {{apiUrl}}/vms/{{vmId}}/start
+Accept: application/json
+
+###
+
+### WORKFLOW 4: Verify it's RUNNING
+GET {{apiUrl}}/vms/{{vmId}}/status
+Accept: application/json
+
+###
+
+### WORKFLOW 5: Pause the VM
+POST {{apiUrl}}/vms/{{vmId}}/pause
+Accept: application/json
+
+###
+
+### WORKFLOW 6: Verify it's PAUSED
+GET {{apiUrl}}/vms/{{vmId}}/status
+Accept: application/json
+
+###
+
+### WORKFLOW 7: Resume the VM
+POST {{apiUrl}}/vms/{{vmId}}/resume
+Accept: application/json
+
+###
+
+### WORKFLOW 8: Verify it's RUNNING again
+GET {{apiUrl}}/vms/{{vmId}}/status
+Accept: application/json
+
+###
+
+### WORKFLOW 9: Restart the VM (stays RUNNING)
+POST {{apiUrl}}/vms/{{vmId}}/restart
+Accept: application/json
+
+###
+
+### WORKFLOW 10: Stop the VM
+POST {{apiUrl}}/vms/{{vmId}}/stop
+Accept: application/json
+
+###
+
+### WORKFLOW 11: Verify it's STOPPED
+GET {{apiUrl}}/vms/{{vmId}}/status
+Accept: application/json
+
+###
+
+### WORKFLOW 12: Delete the VM
+DELETE {{apiUrl}}/vms/{{vmId}}
+Accept: application/json
+
+###
+
+### WORKFLOW 13: Verify it's deleted (should return 404)
+GET {{apiUrl}}/vms/{{vmId}}
+Accept: application/json
+
+###############################################################################
+# BATCH OPERATIONS TEST
+###############################################################################
+
+### BATCH 1: Create multiple VMs
+POST {{apiUrl}}/vms
+Content-Type: application/json
+
+{
+  "name": "batch-vm-1",
+  "flavor": "m1.tiny",
+  "image": "ubuntu-22.04"
+}
+
+###
+
+POST {{apiUrl}}/vms
+Content-Type: application/json
+
+{
+  "name": "batch-vm-2",
+  "flavor": "m1.small",
+  "image": "centos-8"
+}
+
+###
+
+POST {{apiUrl}}/vms
+Content-Type: application/json
+
+{
+  "name": "batch-vm-3",
+  "flavor": "m1.medium",
+  "image": "ubuntu-22.04"
+}
+
+###
+
+### BATCH 2: List all VMs (should show 3)
+GET {{apiUrl}}/vms
+Accept: application/json
+
+###
+
+### BATCH 3: List with pagination (2 per page)
+GET {{apiUrl}}/vms?page=1&page_size=2
+Accept: application/json
+
+###
+
+### BATCH 4: Get next page
+GET {{apiUrl}}/vms?page=2&page_size=2
+Accept: application/json
+
+###############################################################################
+# VM FLAVORS TEST
+###############################################################################
+
+### Test each VM flavor
+POST {{apiUrl}}/vms
+Content-Type: application/json
+
+{
+  "name": "tiny-vm",
+  "flavor": "m1.tiny",
+  "image": "ubuntu-22.04"
+}
+
+###
+
+POST {{apiUrl}}/vms
+Content-Type: application/json
+
+{
+  "name": "small-vm",
+  "flavor": "m1.small",
+  "image": "ubuntu-22.04"
+}
+
+###
+
+POST {{apiUrl}}/vms
+Content-Type: application/json
+
+{
+  "name": "medium-vm",
+  "flavor": "m1.medium",
+  "image": "ubuntu-22.04"
+}
+
+###
+
+POST {{apiUrl}}/vms
+Content-Type: application/json
+
+{
+  "name": "large-vm",
+  "flavor": "m1.large",
+  "image": "ubuntu-22.04"
+}
+
+###
+
+POST {{apiUrl}}/vms
+Content-Type: application/json
+
+{
+  "name": "xlarge-vm",
+  "flavor": "m1.xlarge",
+  "image": "ubuntu-22.04"
+}
+
+###############################################################################
+# DOCUMENTATION & API INFO
+###############################################################################
+
+### Access Swagger UI (open in browser)
+# GET {{baseUrl}}/docs
+
+### Access ReDoc (open in browser)
+# GET {{baseUrl}}/redoc
+
+### Get OpenAPI JSON Schema
+GET {{baseUrl}}/openapi.json
+Accept: application/json
+
+###
+
+###############################################################################
+# NOTES
+###############################################################################
+#
+# HOW TO USE THIS FILE:
+# 1. Start the API server: uvicorn main:app --reload
+# 2. Replace {{vmId}} variable with actual VM ID from create response
+# 3. Click "Send Request" on any ### block to execute
+# 4. Use VS Code REST Client extension or similar HTTP client
+#
+# VM FLAVORS:
+# - m1.tiny:   1 vCPU, 512 MB RAM
+# - m1.small:  1 vCPU, 2 GB RAM
+# - m1.medium: 2 vCPU, 4 GB RAM
+# - m1.large:  4 vCPU, 8 GB RAM
+# - m1.xlarge: 8 vCPU, 16 GB RAM
+#
+# VM STATUS VALUES:
+# - STOPPED: VM is shut down
+# - RUNNING: VM is active and running
+# - PAUSED:  VM is paused (suspended to RAM)
+# - DELETED: VM has been deleted
+# - ERROR:   VM is in error state
+#
+# STATE TRANSITIONS:
+# - Start:   STOPPED → RUNNING
+# - Stop:    RUNNING → STOPPED or PAUSED → STOPPED
+# - Restart: RUNNING → RUNNING (reboot)
+# - Pause:   RUNNING → PAUSED
+# - Resume:  PAUSED → RUNNING
+#
+# HTTP STATUS CODES:
+# - 200: OK (GET, lifecycle operations)
+# - 201: Created (POST /vms)
+# - 204: No Content (DELETE)
+# - 404: Not Found
+# - 409: Conflict (invalid state transition)
+# - 422: Validation Error
+#
+###############################################################################
