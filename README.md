@@ -1,5 +1,9 @@
 # OpenStack VM Lifecycle Management API
 
+[![CI Pipeline](https://github.com/ibmgeniuz/openstack-vm-lifecycle-api/actions/workflows/ci.yml/badge.svg)](https://github.com/ibmgeniuz/openstack-vm-lifecycle-api/actions/workflows/ci.yml)
+[![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org)
+[![Coverage](https://img.shields.io/badge/coverage-90%25-green)](#testing)
+
 **Status:** ✅ **COMPLETE & PRODUCTION READY** | **Tests:** 53/53 Passed (90% Coverage) | **Build:** CLEAN
 
 
