@@ -5,7 +5,6 @@ FastAPI endpoints for VM lifecycle management.
 """
 
 import logging
-from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
@@ -16,14 +15,14 @@ from app.exceptions import (
     VMNotFoundException,
     InvalidStateTransitionException,
     VMAlreadyExistsException,
-    VMException
+    VMException,
 )
 from app.models.vm import (
     VMCreateRequest,
     VMResponse,
     VMListResponse,
     VMStatusResponse,
-    HealthResponse
+    HealthResponse,
 )
 from app.repositories.vm_repository import VMRepository
 from app.services.vm_service import VMService
@@ -33,8 +32,7 @@ logger = logging.getLogger(__name__)
 
 # Create router with API versioning
 router = APIRouter(
-    prefix=f"/api/{settings.api_version}",
-    tags=["VM Lifecycle Management"]
+    prefix=f"/api/{settings.api_version}", tags=["VM Lifecycle Management"]
 )
 
 # Dependency injection for service
@@ -53,14 +51,12 @@ def get_vm_service() -> VMService:
     response_model=HealthResponse,
     status_code=status.HTTP_200_OK,
     summary="Health Check",
-    description="Check API health and status"
+    description="Check API health and status",
 )
 async def health_check():
     """API health check endpoint"""
     return HealthResponse(
-        status="healthy",
-        version=settings.api_version,
-        timestamp=get_datetime_now()
+        status="healthy", version=settings.api_version, timestamp=get_datetime_now()
     )
 
 
@@ -69,11 +65,10 @@ async def health_check():
     response_model=VMResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create VM",
-    description="Create a new virtual machine instance"
+    description="Create a new virtual machine instance",
 )
 async def create_vm(
-    request: VMCreateRequest,
-    service: VMService = Depends(get_vm_service)
+    request: VMCreateRequest, service: VMService = Depends(get_vm_service)
 ):
     """
     Create a new VM instance.
@@ -106,13 +101,15 @@ async def create_vm(
     response_model=VMListResponse,
     status_code=status.HTTP_200_OK,
     summary="List VMs",
-    description="List all virtual machines with pagination and filtering"
+    description="List all virtual machines with pagination and filtering",
 )
 async def list_vms(
     page: int = Query(1, ge=1, description="Page number (1-indexed)"),
     page_size: int = Query(10, ge=1, le=100, description="Items per page"),
-    status: Optional[str] = Query(None, description="Filter by status (RUNNING, STOPPED, PAUSED)"),
-    service: VMService = Depends(get_vm_service)
+    status: Optional[str] = Query(
+        None, description="Filter by status (RUNNING, STOPPED, PAUSED)"
+    ),
+    service: VMService = Depends(get_vm_service),
 ):
     """
     List all VMs with pagination.
@@ -140,12 +137,9 @@ async def list_vms(
     response_model=VMResponse,
     status_code=status.HTTP_200_OK,
     summary="Get VM Details",
-    description="Retrieve details of a specific virtual machine"
+    description="Retrieve details of a specific virtual machine",
 )
-async def get_vm(
-    vm_id: UUID,
-    service: VMService = Depends(get_vm_service)
-):
+async def get_vm(vm_id: UUID, service: VMService = Depends(get_vm_service)):
     """
     Get VM details by ID.
 
@@ -175,12 +169,9 @@ async def get_vm(
     response_model=VMStatusResponse,
     status_code=status.HTTP_200_OK,
     summary="Get VM Status",
-    description="Get current status of a virtual machine"
+    description="Get current status of a virtual machine",
 )
-async def get_vm_status(
-    vm_id: UUID,
-    service: VMService = Depends(get_vm_service)
-):
+async def get_vm_status(vm_id: UUID, service: VMService = Depends(get_vm_service)):
     """
     Get VM status.
 
@@ -210,12 +201,9 @@ async def get_vm_status(
     response_model=VMResponse,
     status_code=status.HTTP_200_OK,
     summary="Start VM",
-    description="Start (boot) a stopped virtual machine"
+    description="Start (boot) a stopped virtual machine",
 )
-async def start_vm(
-    vm_id: UUID,
-    service: VMService = Depends(get_vm_service)
-):
+async def start_vm(vm_id: UUID, service: VMService = Depends(get_vm_service)):
     """
     Start a VM.
 
@@ -245,12 +233,9 @@ async def start_vm(
     response_model=VMResponse,
     status_code=status.HTTP_200_OK,
     summary="Stop VM",
-    description="Stop (shutdown) a running or paused virtual machine"
+    description="Stop (shutdown) a running or paused virtual machine",
 )
-async def stop_vm(
-    vm_id: UUID,
-    service: VMService = Depends(get_vm_service)
-):
+async def stop_vm(vm_id: UUID, service: VMService = Depends(get_vm_service)):
     """
     Stop a VM.
 
@@ -280,12 +265,9 @@ async def stop_vm(
     response_model=VMResponse,
     status_code=status.HTTP_200_OK,
     summary="Restart VM",
-    description="Restart (reboot) a running virtual machine"
+    description="Restart (reboot) a running virtual machine",
 )
-async def restart_vm(
-    vm_id: UUID,
-    service: VMService = Depends(get_vm_service)
-):
+async def restart_vm(vm_id: UUID, service: VMService = Depends(get_vm_service)):
     """
     Restart a VM.
 
@@ -315,12 +297,9 @@ async def restart_vm(
     response_model=VMResponse,
     status_code=status.HTTP_200_OK,
     summary="Pause VM",
-    description="Pause a running virtual machine (suspend to RAM)"
+    description="Pause a running virtual machine (suspend to RAM)",
 )
-async def pause_vm(
-    vm_id: UUID,
-    service: VMService = Depends(get_vm_service)
-):
+async def pause_vm(vm_id: UUID, service: VMService = Depends(get_vm_service)):
     """
     Pause a VM.
 
@@ -350,12 +329,9 @@ async def pause_vm(
     response_model=VMResponse,
     status_code=status.HTTP_200_OK,
     summary="Resume VM",
-    description="Resume a paused virtual machine"
+    description="Resume a paused virtual machine",
 )
-async def resume_vm(
-    vm_id: UUID,
-    service: VMService = Depends(get_vm_service)
-):
+async def resume_vm(vm_id: UUID, service: VMService = Depends(get_vm_service)):
     """
     Resume a paused VM.
 
@@ -384,12 +360,9 @@ async def resume_vm(
     "/vms/{vm_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete VM",
-    description="Delete a virtual machine instance"
+    description="Delete a virtual machine instance",
 )
-async def delete_vm(
-    vm_id: UUID,
-    service: VMService = Depends(get_vm_service)
-):
+async def delete_vm(vm_id: UUID, service: VMService = Depends(get_vm_service)):
     """
     Delete a VM.
 
