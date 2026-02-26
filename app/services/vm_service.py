@@ -11,9 +11,15 @@ from uuid import UUID
 from app.exceptions import (
     VMNotFoundException,
     InvalidStateTransitionException,
-    VMAlreadyExistsException
+    VMAlreadyExistsException,
 )
-from app.models.vm import VMStatus, VMCreateRequest, VMResponse, VMListResponse, VMStatusResponse
+from app.models.vm import (
+    VMStatus,
+    VMCreateRequest,
+    VMResponse,
+    VMListResponse,
+    VMStatusResponse,
+)
 from app.repositories.vm_repository import VMRepository
 
 logger = logging.getLogger(__name__)
@@ -80,10 +86,7 @@ class VMService:
         return VMResponse(**vm.to_dict())
 
     def list_vms(
-            self,
-            page: int = 1,
-            page_size: int = 10,
-            status_filter: Optional[str] = None
+        self, page: int = 1, page_size: int = 10, status_filter: Optional[str] = None
     ) -> VMListResponse:
         """
         List all VMs with pagination.
@@ -108,10 +111,7 @@ class VMService:
 
         logger.info(f"Listed {len(vm_responses)} VMs (page={page}, total={total})")
         return VMListResponse(
-            items=vm_responses,
-            total=total,
-            page=page,
-            page_size=page_size
+            items=vm_responses, total=total, page=page, page_size=page_size
         )
 
     def start_vm(self, vm_id: UUID) -> VMResponse:
@@ -133,10 +133,13 @@ class VMService:
             raise VMNotFoundException(vm_id)
 
         if vm.status != VMStatus.STOPPED:
-            logger.warning(f"Invalid state transition: Cannot start VM {vm_id} in state {vm.status}")
+            logger.warning(
+                f"Invalid state transition: Cannot start VM {vm_id} in state {vm.status}"
+            )
             raise InvalidStateTransitionException(vm_id, str(vm.status), "start")
 
         updated_vm = self.repository.update_status(vm_id, VMStatus.RUNNING)
+        assert updated_vm is not None, f"VM {vm_id} should exist after status check"
         logger.info(f"VM started successfully: {vm_id}")
         return VMResponse(**updated_vm.to_dict())
 
@@ -163,10 +166,13 @@ class VMService:
             raise InvalidStateTransitionException(vm_id, str(vm.status), "stop")
 
         if vm.status not in [VMStatus.RUNNING, VMStatus.PAUSED]:
-            logger.warning(f"Invalid state transition: Cannot stop VM {vm_id} in state {vm.status}")
+            logger.warning(
+                f"Invalid state transition: Cannot stop VM {vm_id} in state {vm.status}"
+            )
             raise InvalidStateTransitionException(vm_id, str(vm.status), "stop")
 
         updated_vm = self.repository.update_status(vm_id, VMStatus.STOPPED)
+        assert updated_vm is not None, f"VM {vm_id} should exist after status check"
         logger.info(f"VM stopped successfully: {vm_id}")
         return VMResponse(**updated_vm.to_dict())
 
@@ -189,11 +195,14 @@ class VMService:
             raise VMNotFoundException(vm_id)
 
         if vm.status != VMStatus.RUNNING:
-            logger.warning(f"Invalid state transition: Cannot restart VM {vm_id} in state {vm.status}")
+            logger.warning(
+                f"Invalid state transition: Cannot restart VM {vm_id} in state {vm.status}"
+            )
             raise InvalidStateTransitionException(vm_id, str(vm.status), "restart")
 
         # Restart keeps the status as RUNNING but updates the timestamp
         updated_vm = self.repository.update_status(vm_id, VMStatus.RUNNING)
+        assert updated_vm is not None, f"VM {vm_id} should exist after status check"
         logger.info(f"VM restarted successfully: {vm_id}")
         return VMResponse(**updated_vm.to_dict())
 
@@ -216,10 +225,13 @@ class VMService:
             raise VMNotFoundException(vm_id)
 
         if vm.status != VMStatus.RUNNING:
-            logger.warning(f"Invalid state transition: Cannot pause VM {vm_id} in state {vm.status}")
+            logger.warning(
+                f"Invalid state transition: Cannot pause VM {vm_id} in state {vm.status}"
+            )
             raise InvalidStateTransitionException(vm_id, str(vm.status), "pause")
 
         updated_vm = self.repository.update_status(vm_id, VMStatus.PAUSED)
+        assert updated_vm is not None, f"VM {vm_id} should exist after status check"
         logger.info(f"VM paused successfully: {vm_id}")
         return VMResponse(**updated_vm.to_dict())
 
@@ -242,10 +254,13 @@ class VMService:
             raise VMNotFoundException(vm_id)
 
         if vm.status != VMStatus.PAUSED:
-            logger.warning(f"Invalid state transition: Cannot resume VM {vm_id} in state {vm.status}")
+            logger.warning(
+                f"Invalid state transition: Cannot resume VM {vm_id} in state {vm.status}"
+            )
             raise InvalidStateTransitionException(vm_id, str(vm.status), "resume")
 
         updated_vm = self.repository.update_status(vm_id, VMStatus.RUNNING)
+        assert updated_vm is not None, f"VM {vm_id} should exist after status check"
         logger.info(f"VM resumed successfully: {vm_id}")
         return VMResponse(**updated_vm.to_dict())
 
@@ -283,8 +298,4 @@ class VMService:
         if not vm:
             raise VMNotFoundException(vm_id)
 
-        return VMStatusResponse(
-            vm_id=vm.id,
-            status=vm.status,
-            updated_at=vm.updated_at
-        )
+        return VMStatusResponse(vm_id=vm.id, status=vm.status, updated_at=vm.updated_at)
