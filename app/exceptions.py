@@ -10,6 +10,7 @@ from uuid import UUID
 
 class VMException(Exception):
     """Base exception for VM operations"""
+
     def __init__(self, message: str, status_code: int = 500):
         self.message = message
         self.status_code = status_code
@@ -18,6 +19,7 @@ class VMException(Exception):
 
 class VMNotFoundException(VMException):
     """Exception raised when VM is not found"""
+
     def __init__(self, vm_id: UUID):
         message = f"VM with ID {vm_id} not found"
         super().__init__(message, status_code=404)
@@ -26,6 +28,7 @@ class VMNotFoundException(VMException):
 
 class InvalidStateTransitionException(VMException):
     """Exception raised when attempting an invalid state transition"""
+
     def __init__(self, vm_id: UUID, current_state: str, attempted_action: str):
         message = (
             f"Cannot perform '{attempted_action}' on VM {vm_id} "
@@ -39,6 +42,7 @@ class InvalidStateTransitionException(VMException):
 
 class ValidationException(VMException):
     """Exception raised for validation errors"""
+
     def __init__(self, message: str, field: Optional[str] = None):
         super().__init__(message, status_code=422)
         self.field = field
@@ -46,6 +50,7 @@ class ValidationException(VMException):
 
 class VMAlreadyExistsException(VMException):
     """Exception raised when trying to create a VM with a name that already exists"""
+
     def __init__(self, name: str):
         message = f"VM with name '{name}' already exists"
         super().__init__(message, status_code=409)

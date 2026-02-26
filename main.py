@@ -41,7 +41,7 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Configure CORS
@@ -64,16 +64,17 @@ async def root():
         "message": "OpenStack VM Lifecycle Management API",
         "version": __version__,
         "docs": "/docs",
-        "health": f"/api/{settings.api_version}/health"
+        "health": f"/api/{settings.api_version}/health",
     }
 
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "main:app",
         host=settings.host,
         port=settings.port,
         reload=settings.debug,
-        log_level=settings.log_level.lower()
+        log_level=settings.log_level.lower(),
     )
