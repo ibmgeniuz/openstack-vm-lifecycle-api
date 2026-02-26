@@ -1,9 +1,5 @@
 # OpenStack VM Lifecycle Management API
 
-![CI Pipeline](https://github.com)
-[![Python 3.13](https://img.shields.io)](https://www.python.org)
-[![Coverage](https://img.shields.io)](#testing)
-
 **Status:** ✅ **COMPLETE & PRODUCTION READY** | **Tests:** 53/53 Passed (90% Coverage) | **Build:** CLEAN
 
 
