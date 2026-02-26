@@ -5,18 +5,16 @@ Tests business logic and state transitions.
 """
 
 import pytest
-from unittest.mock import Mock, patch
 from uuid import uuid4
 
 from app.exceptions import (
     VMNotFoundException,
     InvalidStateTransitionException,
-    VMAlreadyExistsException
+    VMAlreadyExistsException,
 )
 from app.models.vm import VMStatus, VMFlavor, VMCreateRequest
-from app.repositories.vm_repository import VMRepository, VM
+from app.repositories.vm_repository import VMRepository
 from app.services.vm_service import VMService
-from datetime import datetime
 
 
 @pytest.fixture
@@ -35,10 +33,7 @@ def service(repository):
 def sample_vm_request():
     """Sample VM creation request"""
     return VMCreateRequest(
-        name="test-vm",
-        flavor=VMFlavor.SMALL,
-        image="ubuntu-22.04",
-        network="default"
+        name="test-vm", flavor=VMFlavor.SMALL, image="ubuntu-22.04", network="default"
     )
 
 
@@ -98,9 +93,7 @@ class TestVMRetrieval:
         service.create_vm(sample_vm_request)
 
         request2 = VMCreateRequest(
-            name="test-vm-2",
-            flavor=VMFlavor.MEDIUM,
-            image="centos-8"
+            name="test-vm-2", flavor=VMFlavor.MEDIUM, image="centos-8"
         )
         service.create_vm(request2)
 
@@ -114,9 +107,7 @@ class TestVMRetrieval:
         # Create 5 VMs
         for i in range(5):
             request = VMCreateRequest(
-                name=f"test-vm-{i}",
-                flavor=VMFlavor.SMALL,
-                image="ubuntu-22.04"
+                name=f"test-vm-{i}", flavor=VMFlavor.SMALL, image="ubuntu-22.04"
             )
             service.create_vm(request)
 
@@ -138,9 +129,7 @@ class TestVMRetrieval:
         vm1 = service.create_vm(sample_vm_request)
 
         request2 = VMCreateRequest(
-            name="test-vm-2",
-            flavor=VMFlavor.MEDIUM,
-            image="centos-8"
+            name="test-vm-2", flavor=VMFlavor.MEDIUM, image="centos-8"
         )
         vm2 = service.create_vm(request2)
 
