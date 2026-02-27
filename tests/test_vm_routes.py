@@ -9,18 +9,33 @@ from fastapi.testclient import TestClient
 from uuid import uuid4
 
 from main import app
-from app.routes.vm_routes import _repository
+from app.routes import vm_routes
 
 
 client = TestClient(app)
 
 
 @pytest.fixture(autouse=True)
-def clear_repository():
-    """Clear repository before each test"""
-    _repository._storage.clear()
-    _repository._name_index.clear()
-    yield
+def setup_test_environment():
+    """
+    Setup test environment and ensure mock repository is used.
+
+    This fixture runs before each test to ensure a fresh repository state.
+    """
+    # Reset globals to force re-initialization with test settings
+    vm_routes._repository = None
+    vm_routes._service = None
+
+    # Initialize service (will use mock repository due to conftest.py settings)
+    vm_routes.get_vm_service()
+    repository = vm_routes._repository
+
+    yield repository
+
+    # Clear repository after test if it has the mock storage attributes
+    if hasattr(repository, "_storage") and hasattr(repository, "_name_index"):
+        repository._storage.clear()
+        repository._name_index.clear()
 
 
 class TestHealthEndpoint:
@@ -42,21 +57,21 @@ class TestCreateVM:
 
     def test_create_vm_success(self):
         """Test successful VM creation"""
-        payload = {"name": "test-vm", "flavor": "m1.small", "image": "ubuntu-22.04"}
+        payload = {"name": "test-vm", "flavor": "m1.tiny", "image": "cirros"}
 
         response = client.post("/api/v1/vms", json=payload)
 
         assert response.status_code == 201
         data = response.json()
         assert data["name"] == "test-vm"
-        assert data["flavor"] == "m1.small"
+        assert data["flavor"] == "m1.tiny"
         assert data["status"] == "STOPPED"
         assert "id" in data
         assert "ip_address" in data
 
     def test_create_vm_duplicate_name(self):
         """Test creating VM with duplicate name fails"""
-        payload = {"name": "test-vm", "flavor": "m1.small", "image": "ubuntu-22.04"}
+        payload = {"name": "test-vm", "flavor": "m1.tiny", "image": "cirros"}
 
         # Create first VM
         response1 = client.post("/api/v1/vms", json=payload)
@@ -70,8 +85,8 @@ class TestCreateVM:
         """Test creating VM with invalid name fails"""
         payload = {
             "name": "ab",  # Too short
-            "flavor": "m1.small",
-            "image": "ubuntu-22.04",
+            "flavor": "m1.tiny",
+            "image": "cirros",
         }
 
         response = client.post("/api/v1/vms", json=payload)
@@ -82,7 +97,7 @@ class TestCreateVM:
         payload = {
             "name": "test-vm",
             "flavor": "invalid-flavor",
-            "image": "ubuntu-22.04",
+            "image": "cirros",
         }
 
         response = client.post("/api/v1/vms", json=payload)
@@ -107,8 +122,8 @@ class TestListVMs:
         for i in range(3):
             payload = {
                 "name": f"test-vm-{i}",
-                "flavor": "m1.small",
-                "image": "ubuntu-22.04",
+                "flavor": "m1.tiny",
+                "image": "cirros",
             }
             client.post("/api/v1/vms", json=payload)
 
@@ -125,8 +140,8 @@ class TestListVMs:
         for i in range(5):
             payload = {
                 "name": f"test-vm-{i}",
-                "flavor": "m1.small",
-                "image": "ubuntu-22.04",
+                "flavor": "m1.tiny",
+                "image": "cirros",
             }
             client.post("/api/v1/vms", json=payload)
 
@@ -143,13 +158,13 @@ class TestListVMs:
         # Create 2 VMs
         response1 = client.post(
             "/api/v1/vms",
-            json={"name": "vm-1", "flavor": "m1.small", "image": "ubuntu-22.04"},
+            json={"name": "vm-1", "flavor": "m1.tiny", "image": "cirros"},
         )
         vm1_id = response1.json()["id"]
 
         client.post(
             "/api/v1/vms",
-            json={"name": "vm-2", "flavor": "m1.small", "image": "ubuntu-22.04"},
+            json={"name": "vm-2", "flavor": "m1.tiny", "image": "cirros"},
         )
 
         # Start one VM
@@ -170,7 +185,7 @@ class TestGetVM:
         # Create VM
         create_response = client.post(
             "/api/v1/vms",
-            json={"name": "test-vm", "flavor": "m1.small", "image": "ubuntu-22.04"},
+            json={"name": "test-vm", "flavor": "m1.tiny", "image": "cirros"},
         )
         vm_id = create_response.json()["id"]
 
@@ -199,7 +214,7 @@ class TestGetVMStatus:
         # Create VM
         create_response = client.post(
             "/api/v1/vms",
-            json={"name": "test-vm", "flavor": "m1.small", "image": "ubuntu-22.04"},
+            json={"name": "test-vm", "flavor": "m1.tiny", "image": "cirros"},
         )
         vm_id = create_response.json()["id"]
 
@@ -228,7 +243,7 @@ class TestStartVM:
         # Create VM
         create_response = client.post(
             "/api/v1/vms",
-            json={"name": "test-vm", "flavor": "m1.small", "image": "ubuntu-22.04"},
+            json={"name": "test-vm", "flavor": "m1.tiny", "image": "cirros"},
         )
         vm_id = create_response.json()["id"]
 
@@ -244,7 +259,7 @@ class TestStartVM:
         # Create and start VM
         create_response = client.post(
             "/api/v1/vms",
-            json={"name": "test-vm", "flavor": "m1.small", "image": "ubuntu-22.04"},
+            json={"name": "test-vm", "flavor": "m1.tiny", "image": "cirros"},
         )
         vm_id = create_response.json()["id"]
         client.post(f"/api/v1/vms/{vm_id}/start")
@@ -263,7 +278,7 @@ class TestStopVM:
         # Create and start VM
         create_response = client.post(
             "/api/v1/vms",
-            json={"name": "test-vm", "flavor": "m1.small", "image": "ubuntu-22.04"},
+            json={"name": "test-vm", "flavor": "m1.tiny", "image": "cirros"},
         )
         vm_id = create_response.json()["id"]
         client.post(f"/api/v1/vms/{vm_id}/start")
@@ -280,7 +295,7 @@ class TestStopVM:
         # Create VM (already stopped)
         create_response = client.post(
             "/api/v1/vms",
-            json={"name": "test-vm", "flavor": "m1.small", "image": "ubuntu-22.04"},
+            json={"name": "test-vm", "flavor": "m1.tiny", "image": "cirros"},
         )
         vm_id = create_response.json()["id"]
 
@@ -298,7 +313,7 @@ class TestRestartVM:
         # Create and start VM
         create_response = client.post(
             "/api/v1/vms",
-            json={"name": "test-vm", "flavor": "m1.small", "image": "ubuntu-22.04"},
+            json={"name": "test-vm", "flavor": "m1.tiny", "image": "cirros"},
         )
         vm_id = create_response.json()["id"]
         client.post(f"/api/v1/vms/{vm_id}/start")
@@ -315,7 +330,7 @@ class TestRestartVM:
         # Create VM (stopped)
         create_response = client.post(
             "/api/v1/vms",
-            json={"name": "test-vm", "flavor": "m1.small", "image": "ubuntu-22.04"},
+            json={"name": "test-vm", "flavor": "m1.tiny", "image": "cirros"},
         )
         vm_id = create_response.json()["id"]
 
@@ -333,7 +348,7 @@ class TestPauseVM:
         # Create and start VM
         create_response = client.post(
             "/api/v1/vms",
-            json={"name": "test-vm", "flavor": "m1.small", "image": "ubuntu-22.04"},
+            json={"name": "test-vm", "flavor": "m1.tiny", "image": "cirros"},
         )
         vm_id = create_response.json()["id"]
         client.post(f"/api/v1/vms/{vm_id}/start")
@@ -350,7 +365,7 @@ class TestPauseVM:
         # Create VM (stopped)
         create_response = client.post(
             "/api/v1/vms",
-            json={"name": "test-vm", "flavor": "m1.small", "image": "ubuntu-22.04"},
+            json={"name": "test-vm", "flavor": "m1.tiny", "image": "cirros"},
         )
         vm_id = create_response.json()["id"]
 
@@ -368,7 +383,7 @@ class TestResumeVM:
         # Create, start, and pause VM
         create_response = client.post(
             "/api/v1/vms",
-            json={"name": "test-vm", "flavor": "m1.small", "image": "ubuntu-22.04"},
+            json={"name": "test-vm", "flavor": "m1.tiny", "image": "cirros"},
         )
         vm_id = create_response.json()["id"]
         client.post(f"/api/v1/vms/{vm_id}/start")
@@ -386,7 +401,7 @@ class TestResumeVM:
         # Create and start VM
         create_response = client.post(
             "/api/v1/vms",
-            json={"name": "test-vm", "flavor": "m1.small", "image": "ubuntu-22.04"},
+            json={"name": "test-vm", "flavor": "m1.tiny", "image": "cirros"},
         )
         vm_id = create_response.json()["id"]
         client.post(f"/api/v1/vms/{vm_id}/start")
@@ -405,7 +420,7 @@ class TestDeleteVM:
         # Create VM
         create_response = client.post(
             "/api/v1/vms",
-            json={"name": "test-vm", "flavor": "m1.small", "image": "ubuntu-22.04"},
+            json={"name": "test-vm", "flavor": "m1.tiny", "image": "cirros"},
         )
         vm_id = create_response.json()["id"]
 
@@ -438,7 +453,7 @@ class TestCompleteWorkflows:
             json={
                 "name": "workflow-vm",
                 "flavor": "m1.medium",
-                "image": "ubuntu-22.04",
+                "image": "cirros",
             },
         )
         assert response.status_code == 201
@@ -483,8 +498,8 @@ class TestCompleteWorkflows:
                 "/api/v1/vms",
                 json={
                     "name": f"multi-vm-{i}",
-                    "flavor": "m1.small",
-                    "image": "ubuntu-22.04",
+                    "flavor": "m1.tiny",
+                    "image": "cirros",
                 },
             )
             assert response.status_code == 201

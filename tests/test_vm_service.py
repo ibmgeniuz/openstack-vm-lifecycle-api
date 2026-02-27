@@ -33,7 +33,7 @@ def service(repository):
 def sample_vm_request():
     """Sample VM creation request"""
     return VMCreateRequest(
-        name="test-vm", flavor=VMFlavor.SMALL, image="ubuntu-22.04", network="default"
+        name="test-vm", flavor=VMFlavor.TINY, image="cirros", network="private"
     )
 
 
@@ -45,8 +45,8 @@ class TestVMCreation:
         vm = service.create_vm(sample_vm_request)
 
         assert vm.name == "test-vm"
-        assert vm.flavor == VMFlavor.SMALL.value
-        assert vm.image == "ubuntu-22.04"
+        assert vm.flavor == VMFlavor.TINY.value
+        assert vm.image == "cirros"
         assert vm.status == VMStatus.STOPPED
         assert vm.ip_address is not None
         assert vm.id is not None
@@ -107,7 +107,7 @@ class TestVMRetrieval:
         # Create 5 VMs
         for i in range(5):
             request = VMCreateRequest(
-                name=f"test-vm-{i}", flavor=VMFlavor.SMALL, image="ubuntu-22.04"
+                name=f"test-vm-{i}", flavor=VMFlavor.TINY, image="cirros"
             )
             service.create_vm(request)
 

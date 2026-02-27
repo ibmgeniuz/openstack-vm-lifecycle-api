@@ -1,0 +1,78 @@
+[run]
+# Coverage configuration for OpenStack VM Lifecycle Management API
+
+# Source directories to measure
+source = app
+
+# Files to omit from coverage
+omit =
+    */tests/*
+    */__pycache__/*
+    */venv/*
+    */.venv/*
+    */site-packages/*
+    */__init__.py
+    */conftest.py
+    # Omit OpenStack repository from unit test coverage
+    # It's tested separately with integration tests (pytest -m integration)
+    app/repositories/openstack_vm_repository.py
+    # Omit test helpers
+    tests/openstack_helpers.py
+
+# Branch coverage (measure if/else branches)
+branch = True
+
+[report]
+# Reporting options
+
+# Show missing lines
+show_missing = True
+
+# Precision for coverage percentage
+precision = 2
+
+# Lines to exclude from coverage
+exclude_lines =
+    # Standard pragma
+    pragma: no cover
+
+    # Don't complain about missing debug code
+    def __repr__
+    def __str__
+
+    # Don't complain if tests don't hit defensive assertion code
+    raise AssertionError
+    raise NotImplementedError
+
+    # Don't complain if non-runnable code isn't run
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    if typing.TYPE_CHECKING:
+
+    # Don't complain about abstract methods
+    @abstractmethod
+    @abc.abstractmethod
+
+    # Don't complain about overload definitions
+    @overload
+
+    # Don't complain about ellipsis
+    \.\.\.
+
+# Note: OpenStack repository is tested with integration tests
+# Run with: USE_REAL_OPENSTACK=True pytest -m "" --cov=app
+# For unit tests only, OpenStack repository coverage is excluded below
+
+# Fail if coverage is below this threshold
+# Unit tests target: 90% (excluding OpenStack repository)
+# All tests target: 85% (including OpenStack repository)
+# fail_under = 85.0  # Commented out - manually check coverage
+
+[html]
+# HTML report configuration
+directory = htmlcov
+title = OpenStack VM API Coverage Report
+
+[xml]
+# XML report for CI/CD
+output = coverage.xml
