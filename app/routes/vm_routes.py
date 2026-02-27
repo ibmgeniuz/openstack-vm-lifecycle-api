@@ -5,7 +5,7 @@ FastAPI endpoints for VM lifecycle management.
 """
 
 import logging
-from typing import Optional
+from typing import Optional, Any
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status, Depends
@@ -24,7 +24,7 @@ from app.models.vm import (
     VMStatusResponse,
     HealthResponse,
 )
-from app.repositories.vm_repository import VMRepository
+from app.repositories.vm_repository_factory import get_vm_repository
 from app.services.vm_service import VMService
 from app.utils.helpers import get_datetime_now
 
@@ -36,13 +36,23 @@ router = APIRouter(
 )
 
 # Dependency injection for service
-# In production, this would be a proper dependency with lifecycle management
-_repository = VMRepository()
-_service = VMService(_repository)
+# Repository is created via factory (mock or real OpenStack based on config)
+_repository: Optional[Any] = None
+_service: Optional[VMService] = None
 
 
 def get_vm_service() -> VMService:
-    """Dependency to get VM service instance"""
+    """
+    Dependency to get VM service instance.
+
+    Creates repository via factory pattern - will use mock or real OpenStack
+    based on USE_REAL_OPENSTACK configuration.
+    """
+    global _repository, _service
+    if _service is None:
+        _repository = get_vm_repository()
+        _service = VMService(_repository)
+        logger.info(f"VM Service initialized with {type(_repository).__name__}")
     return _service
 
 
