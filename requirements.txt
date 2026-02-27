@@ -25,3 +25,6 @@ anyio==4.12.1
 
 # Date/Time Handling
 python-dateutil==2.9.0
+
+# OpenStack SDK
+openstacksdk==4.10.0

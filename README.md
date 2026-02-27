@@ -30,7 +30,9 @@ A REST API for managing OpenStack virtual machine lifecycle operations, built wi
 
 This project provides a comprehensive REST API for managing virtual machine lifecycle in an OpenStack environment. It implements core CRUD operations plus advanced lifecycle management (start, stop, restart, pause, resume) with proper state management and validation.
 
-**Note:** This is a proof-of-concept implementation using mock OpenStack integration. It demonstrates API design and architecture patterns suitable for production use.
+**Implementation Modes:**
+- **Mock Mode** (default): In-memory storage for development and testing
+- **Real OpenStack Mode**: Connect to DevStack or production OpenStack deployment
 
 ## Features
 
@@ -105,14 +107,121 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Configure Environment (Optional)
+### 4. Configure Environment
 
 ```bash
 # Copy example environment file
 cp .env.example .env
 
-# Edit .env with your settings (if needed)
+# Edit .env with your settings
+# For mock mode (default): No changes needed
+# For OpenStack mode: See "OpenStack Integration" section below
 ```
+
+## OpenStack Integration
+
+### Using Mock Mode (Default)
+
+By default, the API uses an in-memory mock implementation. No additional configuration needed.
+
+```bash
+# .env file
+USE_REAL_OPENSTACK=False
+```
+
+### Using Real OpenStack (DevStack or Production)
+
+To connect to a real OpenStack deployment:
+
+#### 1. Install OpenStack SDK
+
+Already included in `requirements.txt`:
+```bash
+pip install openstacksdk
+```
+
+#### 2. Configure OpenStack Credentials
+
+Edit your `.env` file with your OpenStack credentials:
+
+```bash
+# Enable real OpenStack mode
+USE_REAL_OPENSTACK=True
+
+# DevStack Configuration (typical local setup)
+OPENSTACK_AUTH_URL=http://localhost/identity
+OPENSTACK_USERNAME=admin
+OPENSTACK_PASSWORD=devstack
+OPENSTACK_PROJECT_NAME=demo
+OPENSTACK_PROJECT_DOMAIN_NAME=Default
+OPENSTACK_USER_DOMAIN_NAME=Default
+OPENSTACK_REGION_NAME=RegionOne
+```
+
+**Note:** For DevStack, the default admin password is typically `devstack`. Check your DevStack configuration if different.
+
+#### 3. Verify OpenStack Connection
+
+Before starting the API, verify your OpenStack credentials work:
+
+```bash
+# Install OpenStack CLI (optional, for testing)
+pip install python-openstackclient
+
+# Find your DevStack identity endpoint (usually NOT localhost)
+openstack endpoint list | grep identity
+# Example output: http://192.168.2.110/identity
+
+# Test connection (replace URL with your endpoint)
+openstack --os-auth-url http://192.168.2.110/identity \
+  --os-username admin \
+  --os-password devstack \
+  --os-project-name demo \
+  --os-user-domain-name Default \
+  --os-project-domain-name Default \
+  server list
+
+# Verify available resources
+openstack network list    # Should show: private, public, shared
+openstack image list      # Should show: cirros
+openstack flavor list     # Should show: m1.tiny, m1.small, etc.
+```
+
+**Common DevStack URLs:**
+- Identity API: `http://<devstack-ip>/identity`
+- Compute API: `http://<devstack-ip>/compute/v2.1`
+- Network API: `http://<devstack-ip>/networking`
+
+**Note:** DevStack typically runs on the machine's IP address (e.g., `192.168.2.110`), not `localhost`.
+
+#### 4. Start the API with OpenStack
+
+```bash
+uvicorn main:app --reload
+```
+
+The API will now create, manage, and delete real VMs in your OpenStack deployment.
+
+### OpenStack Requirements
+
+When using real OpenStack mode, ensure your OpenStack deployment has:
+- **Flavors**: `m1.tiny`, `m1.small`, `m1.medium`, `m1.large`, `m1.xlarge` (or update flavor names in API calls)
+- **Images**: At least one bootable image (e.g., `ubuntu-22.04`, `cirros`)
+- **Networks**: At least one network configured for VM connectivity
+
+### Switching Between Modes
+
+You can switch between mock and real OpenStack by changing the `USE_REAL_OPENSTACK` environment variable:
+
+```bash
+# Switch to mock mode
+USE_REAL_OPENSTACK=False
+
+# Switch to real OpenStack
+USE_REAL_OPENSTACK=True
+```
+
+Restart the API after changing this setting.
 
 ## Running the Application
 
@@ -167,8 +276,9 @@ curl -X POST http://localhost:8000/api/v1/vms \
   -H "Content-Type: application/json" \
   -d '{
     "name": "web-server-01",
-    "flavor": "m1.medium",
-    "image": "ubuntu-22.04"
+    "flavor": "m1.tiny",
+    "image": "cirros",
+    "network": "private"
   }'
 ```
 
@@ -228,7 +338,7 @@ curl -X DELETE http://localhost:8000/api/v1/vms/{vm_id}
 # 1. Create a VM
 VM_ID=$(curl -s -X POST http://localhost:8000/api/v1/vms \
   -H "Content-Type: application/json" \
-  -d '{"name":"test-vm","flavor":"m1.small","image":"ubuntu-22.04"}' \
+  -d '{"name":"test-vm","flavor":"m1.tiny","image":"cirros","network":"private"}' \
   | jq -r '.id')
 
 echo "Created VM: $VM_ID"
@@ -254,17 +364,51 @@ curl -X DELETE http://localhost:8000/api/v1/vms/$VM_ID
 
 ## Testing
 
-### Run All Tests
+The project includes comprehensive unit tests and optional integration tests for OpenStack.
+
+### Test Types
+
+**Unit Tests** (default):
+- Use mock repository (no external dependencies)
+- Fast execution (~0.3s)
+- Run automatically in CI/CD
+- **Coverage: ~90%**
+
+**Integration Tests** (optional):
+- Require real OpenStack connection
+- Test actual OpenStack SDK integration
+- Slower execution (~30s)
+- Run manually with DevStack
+
+### Run Unit Tests
 
 ```bash
-# Run all tests with coverage
-pytest --cov=app --cov-report=html
+# Run unit tests only (default behavior)
+pytest
+
+# Run with coverage report
+pytest --cov=app --cov-report=html --cov-report=term
 
 # Run specific test file
-pytest tests/test_vm_service.py
+pytest tests/test_vm_service.py -v
 
-# Run with verbose output
-pytest -v
+# Run specific test
+pytest tests/test_vm_service.py::TestVMCreation::test_create_vm_success -v
+```
+
+### Run Integration Tests
+
+Integration tests require a running OpenStack instance (DevStack):
+
+```bash
+# Run all tests including integration tests
+USE_REAL_OPENSTACK=True pytest -m ""
+
+# Run only integration tests
+USE_REAL_OPENSTACK=True pytest -m integration -v
+
+# Run integration tests with coverage
+USE_REAL_OPENSTACK=True pytest -m "" --cov=app --cov-report=term
 ```
 
 ### View Coverage Report
@@ -282,9 +426,21 @@ xdg-open htmlcov/index.html  # Linux
 ### Test Structure
 
 - `tests/test_vm_service.py` - Unit tests for business logic
-- `tests/test_vm_routes.py` - Integration tests for API endpoints
+- `tests/test_vm_routes.py` - API endpoint tests
+- `tests/test_vm_repository_factory.py` - Factory pattern tests
+- `tests/test_openstack_vm_repository.py` - OpenStack integration tests (requires DevStack)
+- `tests/openstack_helpers.py` - Test utilities for OpenStack
+- `tests/conftest.py` - Global test configuration
 
-**Coverage achieved: 90%** (Target: >80%) ✅
+### Test Markers
+
+Tests are marked for selective execution:
+
+- `@pytest.mark.unit` - Fast unit tests (default)
+- `@pytest.mark.integration` - Integration tests requiring OpenStack
+- `@pytest.mark.slow` - Tests that take longer to execute
+
+**Coverage Target: >85%** | **Current: ~90%** ✅
 
 ## Project Structure
 
