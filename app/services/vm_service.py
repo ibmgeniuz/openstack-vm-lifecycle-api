@@ -5,7 +5,7 @@ Business logic layer for VM operations including state transition validation.
 """
 
 import logging
-from typing import Optional
+from typing import Optional, Any
 from uuid import UUID
 
 from app.exceptions import (
@@ -20,7 +20,6 @@ from app.models.vm import (
     VMListResponse,
     VMStatusResponse,
 )
-from app.repositories.vm_repository import VMRepository
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +31,7 @@ class VMService:
     Handles validation, state transitions, and orchestration of VM operations.
     """
 
-    def __init__(self, repository: VMRepository):
+    def __init__(self, repository: Any):
         """
         Initialize VM service.
 
