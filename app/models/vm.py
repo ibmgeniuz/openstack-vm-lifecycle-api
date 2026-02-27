@@ -53,7 +53,9 @@ class VMCreateRequest(BaseModel):
         examples=["ubuntu-22.04"],
     )
     network: str = Field(
-        default="default", description="Network name", examples=["default"]
+        default="private",
+        description="Network name",
+        examples=["private", "public", "shared"],
     )
 
     @field_validator("name")
@@ -70,9 +72,9 @@ class VMCreateRequest(BaseModel):
         "json_schema_extra": {
             "example": {
                 "name": "web-server-01",
-                "flavor": "m1.medium",
-                "image": "ubuntu-22.04",
-                "network": "default",
+                "flavor": "m1.tiny",
+                "image": "cirros",
+                "network": "private",
             }
         }
     }
@@ -95,8 +97,8 @@ class VMResponse(BaseModel):
             "example": {
                 "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
                 "name": "web-server-01",
-                "flavor": "m1.medium",
-                "image": "ubuntu-22.04",
+                "flavor": "m1.tiny",
+                "image": "cirros",
                 "status": "RUNNING",
                 "ip_address": "192.168.1.100",
                 "created_at": "2026-02-25T10:30:00Z",
@@ -121,8 +123,8 @@ class VMListResponse(BaseModel):
                     {
                         "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
                         "name": "web-server-01",
-                        "flavor": "m1.medium",
-                        "image": "ubuntu-22.04",
+                        "flavor": "m1.tiny",
+                        "image": "cirros",
                         "status": "RUNNING",
                         "ip_address": "192.168.1.100",
                         "created_at": "2026-02-25T10:30:00Z",
