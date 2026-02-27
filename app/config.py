@@ -26,7 +26,10 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "INFO"
 
-    # OpenStack (for future use with real OpenStack)
+    # OpenStack Integration
+    use_real_openstack: bool = (
+        False  # Set to True to use real OpenStack instead of mock
+    )
     openstack_auth_url: Optional[str] = None
     openstack_username: Optional[str] = None
     openstack_password: Optional[str] = None
